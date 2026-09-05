@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Love Chat & Admin Hub</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #0d1117; color: #c9d1d9; display: flex; justify-content: center; align-items: center; height: 100vh; }
+    
+    .card { background: #161b22; width: 100%; max-width: 450px; height: 90vh; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); display: flex; flex-direction: column; overflow: hidden; position: relative; border: 1px solid #30363d; }
+    
+    /* Login Screen */
+    #login-screen { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; padding: 20px; text-align: center; }
+    #login-screen h2 { color: #ff4757; margin-bottom: 8px; font-size: 26px; }
+    #login-screen p { color: #8b949e; font-size: 14px; margin-bottom: 24px; }
+    .google-btn { background-color: #238636; color: white; border: none; padding: 12px 24px; font-size: 15px; border-radius: 20px; cursor: pointer; font-weight: bold; transition: 0.2s; display: flex; align-items: center; gap: 10px; }
+    .google-btn:hover { background-color: #2ea043; }
+    
+    /* Main Screen */
+    #chat-screen { display: none; flex-direction: column; height: 100%; }
+    .chat-header { background-color: #21262d; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #30363d; }
+    .header-btns { display: flex; gap: 8px; }
+    .btn-sm { background: #30363d; border: 1px solid #8b949e; color: white; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; }
+    .btn-sm:hover { background: #484f58; }
+    
+    /* Room Switcher */
+    .room-tabs { display: flex; background: #0d1117; border-bottom: 1px solid #30363d; }
+    .tab-btn { flex: 1; padding: 10px; border: none; background: transparent; color: #8b949e; cursor: pointer; font-weight: bold; font-size: 13px; }
+    .tab-btn.active { color: #ff4757; border-bottom: 2px solid #ff4757; background: #161b22; }
+    
+    /* Private Setup Bar */
+    .private-controls { background: #161b22; padding: 10px; display: flex; gap: 6px; border-bottom: 1px solid #30363d; font-size: 12px; }
+    .private-controls input { flex: 1; padding: 8px; border-radius: 6px; border: 1px solid #30363d; background: #0d1117; color: #fff; outline: none; }
+    .private-controls button { background: #238636; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+
+    /* Messages Display */
+    .chat-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background: #0d1117; }
+    .message { max-width: 80%; padding: 10px 14px; border-radius: 12px; font-size: 13px; word-break: break-word; line-height: 1.4; }
+    .message.sent { background-color: #ff4757; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+    .message.received { background-color: #21262d; color: #c9d1d9; align-self: flex-start; border-bottom-left-radius: 2px; border: 1px solid #30363d; }
+    .sender-name { font-size: 10px; color: #ffa502; margin-bottom: 4px; display: block; font-weight: bold; }
+
+    /* Input Bar */
+    .chat-input { display: flex; padding: 10px; background: #161b22; border-top: 1px solid #30363d; }
+    .chat-input input { flex: 1; padding: 10px 14px; border: 1px solid #30363d; border-radius: 20px; outline: none; background: #0d1117; color: white; }
+    .chat-input button { background-color: #ff4757; color: white; border: none; padding: 10px 18px; margin-left: 8px; border-radius: 20px; cursor: pointer; font-weight: bold; }
+
+    /* Admin Panel Modal */
+    #admin-panel { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #0d1117; z-index: 10; padding: 20px; flex-direction: column; overflow-y: auto; }
+    .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #30363d; padding-bottom: 10px; }
+    .danger-btn { background: #da3633; color: white; border: none; padding: 10px; border-radius: 6px; width: 100%; font-weight: bold; cursor: pointer; margin-bottom: 15px; }
+    .user-list { list-style: none; display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+    .user-card { background: #161b22; padding: 10px 12px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 12px; border: 1px solid #30363d; }
+    .block-btn { background: #d29922; border: none; color: black; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+    .admin-box { background: #161b22; padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ffa502; }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <!-- Login Screen -->
+    <div id="login-screen">
+      <h2>Love Chat ❤️</h2>
+      <p>গুগল অ্যাকাউন্ট দিয়ে প্রবেশ করুন</p>
+      <button class="google-btn" onclick="loginWithGoogle()">🔑 Sign in with Google</button>
+    </div>
+
+    <!-- Main Chat Screen -->
+    <div id="chat-screen">
+      <div class="chat-header">
+        <span id="user-display-name" style="font-weight: bold;">Chat Room</span>
+        <div class="header-btns">
+          <button id="admin-btn" class="btn-sm" style="display:none; background:#ffa502; color:black; border:none;" onclick="toggleAdminPanel(true)">👑 Admin</button>
+          <button class="btn-sm" onclick="logout()">Logout</button>
+        </div>
+      </div>
+
+      <!-- Room Selection Tabs -->
+      <div class="room-tabs">
+        <button class="tab-btn active" id="public-tab" onclick="switchRoom('public')">🌐 Public Group</button>
+        <button class="tab-btn" id="private-tab" onclick="switchRoom('private')">🔒 Private Room</button>
+      </div>
+
+      <!-- Private Room Controls -->
+      <div class="private-controls" id="private-bar" style="display: none;">
+        <input type="text" id="invite-code-input" placeholder="ইনভাইট কোড দিন...">
+        <button onclick="joinPrivateRoom()">Join</button>
+        <button style="background: #e91e63;" onclick="generateInviteCode()">New Code</button>
+      </div>
+
+      <!-- Messages Display -->
+      <div class="chat-messages" id="message-container"></div>
+
+      <!-- Input Box -->
+      <div class="chat-input">
+        <input type="text" id="message-input" placeholder="মেসেজ টাইপ করুন..." onkeypress="handleKeyPress(event)">
+        <button onclick="sendMessage()">Send</button>
+      </div>
+    </div>
+
+    <!-- Admin Panel Overlay -->
+    <div id="admin-panel">
+      <div class="admin-header">
+        <h3 style="color:#ffa502;">👑 Admin Master Control</h3>
+        <button class="btn-sm" onclick="toggleAdminPanel(false)">Close</button>
+      </div>
+
+      <!-- Admin Secret Spy Access -->
+      <div class="admin-box">
+        <h4 style="color: #ffa502; margin-bottom: 6px;">🔍 Spy/Monitor Any Private Room</h4>
+        <div style="display: flex; gap: 6px;">
+          <input type="text" id="admin-room-code" placeholder="Private Room Code দিন" style="flex:1; padding: 6px; border-radius: 4px; border:1px solid #30363d; background:#0d1117; color:#fff;">
+          <button onclick="adminInspectRoom()" style="background: #ffa502; border:none; padding: 6px 12px; border-radius: 4px; font-weight:bold; cursor:pointer; color:black;">Open Chat</button>
+        </div>
+      </div>
+
+      <button class="danger-btn" onclick="clearCurrentChat()">🗑️ Clear Current Selected Room Messages</button>
+      
+      <h4 style="margin-bottom: 10px; color: #238636;">Registered Users List</h4>
+      <ul class="user-list" id="user-list-container"></ul>
+    </div>
+  </div>
+
+  <!-- Firebase JavaScript Modular Library -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getDatabase, ref, push, onValue, set, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    // 🔴 আপনার ফায়ারবেস কনফিগ তথ্য
+    const firebaseConfig = {
+      apiKey: "AIzaSyAfeUfCRhNquYrYFazyTtnajsQBk4HJ5so",
+      authDomain: "love-chat-93977.firebaseapp.com",
+      databaseURL: "https://love-chat-93977-default-rtdb.firebaseio.com",
+      projectId: "love-chat-93977",
+      storageBucket: "love-chat-93977.firebasestorage.app",
+      messagingSenderId: "730674382783",
+      appId: "1:730674382783:web:175c0a254faacfae6e830a",
+      measurementId: "G-HJN148KV9C"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const database = getDatabase(app);
+    const provider = new GoogleAuthProvider();
+
+    let currentUser = null;
+    let isUserBlocked = false;
+    let currentRoom = "public"; 
+    let privateRoomId = "";
+
+    // Auth Status Monitor
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        currentUser = user;
+        
+        // Database User Sync
+        set(ref(database, 'users/' + user.uid), {
+          name: user.displayName,
+          email: user.email,
+          uid: user.uid
+        });
+
+        // Block Status Sync
+        onValue(ref(database, 'blockedUsers/' + user.uid), (snapshot) => {
+          isUserBlocked = snapshot.exists();
+        });
+
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('chat-screen').style.display = 'flex';
+        document.getElementById('user-display-name').innerText = user.displayName;
+
+        // Auto Admin Control Bar
+        document.getElementById('admin-btn').style.display = 'inline-block';
+        loadAdminData();
+
+        loadMessages();
+      } else {
+        currentUser = null;
+        document.getElementById('login-screen').style.display = 'flex';
+        document.getElementById('chat-screen').style.display = 'none';
+      }
+    });
+
+    window.loginWithGoogle = () => {
+      signInWithPopup(auth, provider).catch((error) => {
+        alert("লগইন ত্রুটি: " + error.message);
+      });
+    };
+
+    window.logout = () => signOut(auth);
+
+    // Switch Public / Private Tabs
+    window.switchRoom = (type) => {
+      currentRoom = type;
+      document.getElementById('public-tab').classList.toggle('active', type === 'public');
+      document.getElementById('private-tab').classList.toggle('active', type === 'private');
+      document.getElementById('private-bar').style.display = type === 'private' ? 'flex' : 'none';
+      loadMessages();
+    };
+
+    // Private Room Code Generator
+    window.generateInviteCode = () => {
+      const randomCode = Math.floor(100000 + Math.random() * 900000).toString();
+      document.getElementById('invite-code-input').value = randomCode;
+      privateRoomId = randomCode;
+      alert("আপনার প্রাইভেট রুম কোড: " + randomCode + "\nকাউকে শেয়ার করলে সেও এই চ্যাটে প্রবেশ করতে পারবে।");
+      loadMessages();
+    };
+
+    window.joinPrivateRoom = () => {
+      const inputCode = document.getElementById('invite-code-input').value.trim();
+      if (!inputCode) return alert("ইনভাইট কোড দিন!");
+      privateRoomId = inputCode;
+      alert("প্রাইভেট রুমে যুক্ত হয়েছেন: " + privateRoomId);
+      loadMessages();
+    };
+
+    // Send Message
+    window.sendMessage = () => {
+      if (isUserBlocked) return alert("⚠️ আপনাকে ব্লক করা হয়েছে! আপনি মেসেজ পাঠাতে পারবেন না।");
+      if (currentRoom === 'private' && !privateRoomId) return alert("প্রথমে প্রাইভেট রুমে জয়েন করুন বা কোড দিন!");
+
+      const input = document.getElementById('message-input');
+      const text = input.value.trim();
+
+      if (text !== "" && currentUser) {
+        const path = currentRoom === 'public' ? 'messages/public' : `messages/private_${privateRoomId}`;
+        push(ref(database, path), {
+          senderName: currentUser.displayName,
+          senderEmail: currentUser.email,
+          uid: currentUser.uid,
+          text: text,
+          timestamp: Date.now()
+        });
+        input.value = "";
+      }
+    };
+
+    window.handleKeyPress = (e) => { if (e.key === 'Enter') sendMessage(); };
+
+    // Realtime Message Stream
+    function loadMessages() {
+      const messagesContainer = document.getElementById('message-container');
+      messagesContainer.innerHTML = '';
+      
+      const path = currentRoom === 'public' ? 'messages/public' : `messages/private_${privateRoomId}`;
+      if (currentRoom === 'private' && !privateRoomId) {
+        messagesContainer.innerHTML = '<p style="text-align:center; color:#8b949e; margin-top:20px;">ইনভাইট কোড দিয়ে প্রাইভেট চ্যাটে ঢুকুন</p>';
+        return;
+      }
+
+      onValue(ref(database, path), (snapshot) => {
+        messagesContainer.innerHTML = '';
+        const data = snapshot.val();
+        if (data) {
+          Object.values(data).forEach(msg => {
+            const messageDiv = document.createElement('div');
+            const isMe = msg.uid === currentUser.uid;
+            
+            messageDiv.className = `message ${isMe ? 'sent' : 'received'}`;
+            messageDiv.innerHTML = `<span class="sender-name">${isMe ? 'You' : msg.senderName}</span>${msg.text}`;
+            messagesContainer.appendChild(messageDiv);
+          });
+          messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+      });
+    }
+
+    // --- Admin Control Panel Methods ---
+    window.toggleAdminPanel = (show) => {
+      document.getElementById('admin-panel').style.display = show ? 'flex' : 'none';
+    };
+
+    // Admin Access Any Secret Room
+    window.adminInspectRoom = () => {
+      const code = document.getElementById('admin-room-code').value.trim();
+      if (!code) return alert("প্রাইভেট কোড দিন!");
+      
+      switchRoom('private');
+      document.getElementById('invite-code-input').value = code;
+      privateRoomId = code;
+      loadMessages();
+      toggleAdminPanel(false);
+      alert(`অ্যাডমিন মোডে সিক্রেট রুম (${code}) ওপেন করা হলো!`);
+    };
+
+    function loadAdminData() {
+      const userListContainer = document.getElementById('user-list-container');
+      onValue(ref(database, 'users'), (usersSnapshot) => {
+        onValue(ref(database, 'blockedUsers'), (blockedSnapshot) => {
+          userListContainer.innerHTML = '';
+          const users = usersSnapshot.val() || {};
+          const blockedUsers = blockedSnapshot.val() || {};
+
+          Object.values(users).forEach(u => {
+            const isBlocked = !!blockedUsers[u.uid];
+            const li = document.createElement('li');
+            li.className = 'user-card';
+            li.innerHTML = `
+              <div><strong>${u.name}</strong><br><small style="color:#8b949e;">${u.email}</small></div>
+              <button class="block-btn" onclick="toggleBlockUser('${u.uid}', ${isBlocked})">${isBlocked ? 'Unblock' : 'Block'}</button>
+            `;
+            userListContainer.appendChild(li);
+          });
+        });
+      });
+    }
+
+    window.toggleBlockUser = (uid, currentlyBlocked) => {
+      if (currentlyBlocked) remove(ref(database, 'blockedUsers/' + uid));
+      else set(ref(database, 'blockedUsers/' + uid), true);
+    };
+
+    window.clearCurrentChat = () => {
+      const path = currentRoom === 'public' ? 'messages/public' : `messages/private_${privateRoomId}`;
+      if (confirm("বর্তমানে সিলেক্ট করা এই রুমের সব মেসেজ মুছে ফেলতে চান?")) {
+        remove(ref(database, path));
+      }
+    };
+  </script>
+</body>
+</html>
